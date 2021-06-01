@@ -75,7 +75,6 @@
 #include "Collection_extensions.h"
 #include "ComplexSpectrogram.h"
 #include "Confusion.h"
-#include "ConstantQLogFSpectrogram.h"
 #include "Covariance.h"
 #include "DataModeler.h"
 #include "Discriminant.h"
@@ -98,7 +97,6 @@
 #include "IntensityTierEditor.h"
 #include "Matrix_Categories.h"
 #include "Matrix_extensions.h"
-#include "MultiSampledSpectrogram.h"
 #include "LongSound_extensions.h"
 #include "KlattGridEditors.h"
 #include "KlattTable.h"
@@ -112,8 +110,8 @@
 #include "Polygon_extensions.h"
 #include "Polynomial_to_Spectrum.h"
 #include "Roots_to_Spectrum.h"
+#include "Sound_and_Spectrum_dft.h"
 #include "Sound_extensions.h"
-#include "Sound_and_ConstantQLogFSpectrogram.h"
 #include "Sounds_to_DTW.h"
 #include "Spectrum_extensions.h"
 #include "Spectrogram.h"
@@ -311,8 +309,8 @@ FORM (GRAPHICS_EACH__BarkFilter_paint, U"FilterBank: Paint", nullptr) {
 	OK
 DO
 	GRAPHICS_EACH (BarkFilter)
-		FilterBank_paint ((FilterBank) me, GRAPHICS, fromTime, toTime, fromFrequency, toFrequency,
-			fromAmplitude, toAmplitude, garnish
+		FilterBank_paint (me, GRAPHICS, 
+			fromTime, toTime, fromFrequency, toFrequency, fromAmplitude, toAmplitude, garnish
 		);
 	GRAPHICS_EACH_END
 }
@@ -1259,7 +1257,7 @@ DO
 	QUERY_ONE_FOR_REAL (Discriminant)
 		Melder_require (eigenvalueNumber <= my eigen -> numberOfEigenvalues, 
 			U"Eigenvalue number should be smaller than ", my eigen -> numberOfEigenvalues + 1);
-		const double result = my eigen -> eigenvalues[eigenvalueNumber];
+		const double result = my eigen -> eigenvalues [eigenvalueNumber];
 	QUERY_ONE_FOR_REAL_END (U" (eigenvalue [)", eigenvalueNumber, U"])")
 }
 
@@ -1887,7 +1885,7 @@ DO
 		if ((xTime >= my xmin && xTime <= my xmax) && (yTime >= my ymin && yTime <= my ymax)) {
 			integer irow = Matrix_yToNearestRow (me, yTime);
 			integer icol = Matrix_xToNearestColumn (me, xTime);
-			result = my z[irow][icol];
+			result = my z [irow] [icol];
 		}
 	QUERY_ONE_FOR_REAL_END (U" (= distance at (", xTime, U", ", yTime, U"))")
 }
@@ -3540,57 +3538,6 @@ DIRECT (CONVERT_EACH_TO_ONE__LegendreSeries_to_Polynomial) {
 	CONVERT_EACH_TO_ONE_END (my name.get())
 }
 
-/********************* LogFrequencySpectrogram **************************************/
-
-FORM (MODIFY_ConstantQLogFSpectrogram_formula, U"ConstantQLogFSpectrogram: Formula", U"ConstantQLogFSpectrogram: Formula...") {
-	FORMULA (formula, U"Formula:", U"2 * self")
-	OK
-DO
-	MODIFY_EACH_WEAK (ConstantQLogFSpectrogram)
-		ConstantQLogFSpectrogram_formula (me, formula, interpreter);
-	MODIFY_EACH_WEAK_END
-}
-
-FORM (MODIFY_ConstantQLogFSpectrogram_formula_part, U"ConstantQLogFSpectrogram: Formula (part)", U"ConstantQLogFSpectrogram: Formula...") {
-	REAL (fromTime, U"From time", U"0.0")
-	REAL (toTime, U"To time", U"0.0 (= all)")
-	REAL (fromFrequency, U"From frequency (Hz)", U"100.0")
-	REAL (toFrequency, U"To Frequncy (Hz)", U"200.0")
-	FORMULA (formula, U"Formula:", U"2 * self")
-	OK
-DO
-	MODIFY_EACH_WEAK (ConstantQLogFSpectrogram)
-		ConstantQLogFSpectrogram_formula_part (me, fromTime, toTime, fromFrequency, toFrequency, formula, interpreter);
-	MODIFY_EACH_WEAK_END
-}
-
-FORM (CONVERT_EACH_TO_ONE__ConstantQLogFSpectrogram_translateSpectrum, U"", nullptr) {
-	REAL (fromTime, U"From time", U"0.0")
-	REAL (toTime, U"To time", U"0.0 (= all)")
-	REAL (fromFrequency, U"From frequency (Hz)", U"100.0")
-	REAL (numberOfBins, U"Number of bins", U"5.0")	
-	OK
-DO
-	CONVERT_EACH_TO_ONE (ConstantQLogFSpectrogram)
-		autoConstantQLogFSpectrogram result = ConstantQLogFSpectrogram_translateSpectrum (me, fromTime, toTime, fromFrequency, numberOfBins);
-	CONVERT_EACH_TO_ONE_END (my name.get())
-
-}
-
-FORM (GRAPHICS_EACH__ConstantQLogFSpectrogram_paint, U"ConstantQLogFSpectrogram: Paint", nullptr) {
-	REAL (xmin, U"left Time range (s)", U"0.0")
-	REAL (xmax, U"right Time range (s)", U"0.0 (=all)")
-	REAL (ymin, U"left Frequency range (Hz)", U"0.0")
-	REAL (ymax, U"right Frequency range (Hz)", U"0.0 (=auto)")
-	POSITIVE (dBRange, U"Dynamic range (dB)", U"50.0")
-	BOOLEAN (garnish, U"Garnish", true);
-	OK
-DO
-	GRAPHICS_EACH (ConstantQLogFSpectrogram)
-		ConstantQLogFSpectrogram_paint (me, GRAPHICS, xmin, xmax, ymin, ymax, dBRange, garnish);
-	GRAPHICS_EACH_END
-}
-
 /********************* LongSound **************************************/
 
 FORM_READ (APPEND_ALL__LongSounds_appendToExistingSoundFile, U"LongSound: Append to existing sound file", 0, false) {
@@ -3996,19 +3943,27 @@ DO
 	QUERY_ONE_FOR_REAL_END (U" ", my v_getFrequencyUnit ())
 }
 
+static double Matrix_getValueAtNearestColRow (Matrix me, double x, double y) {
+	/*
+		Compatibility with old behaviour. Having real values as arguments would suggest interpolation which is not done.
+	*/
+	if ((y >= my ymin && y <= my ymax) && (x >= my xmin && x <= my xmax)) {
+		integer icol = Matrix_xToNearestColumn (me, x);
+		Melder_clip (1_integer, & icol, my nx);
+		integer irow = Matrix_yToNearestRow (me, y);
+		Melder_clip (1_integer, & irow, my ny);
+		return my z [irow] [icol];
+	} else
+		return undefined;	
+}
+
 FORM (QUERY_ONE_FOR_REAL__FilterBank_getValueInCell, U"Get value in cell", nullptr) {
 	REAL (time, U"Time (s)", U"0.5")
 	POSITIVE (frequency, U"Frequency", U"1.0")
 	OK
 DO
 	QUERY_ONE_FOR_REAL (FilterBank)
-		double result = undefined;
-		const integer icol = Matrix_xToNearestColumn (me, time);
-		if (icol > 0 && icol <= my nx) {
-			const integer irow = Matrix_yToNearestRow (me, frequency);
-			if (irow > 0 && irow <= my ny)
-				result = my z[irow][icol];
-		}
+		const double result = Matrix_getValueAtNearestColRow (me, time, frequency);
 	QUERY_ONE_FOR_REAL_END (U"")
 }
 
@@ -4062,24 +4017,7 @@ FORM (QUERY_ONE_FOR_REAL__BandFilterSpectrogram_getValueInCell, U"Get value in c
 	OK
 DO
 	QUERY_ONE_FOR_REAL (BandFilterSpectrogram)
-		double result = undefined;
-		if ((frequency >= my ymin && frequency <= my ymax) && (time >+ my xmin && time <= my ymin)) {
-			integer col = Matrix_xToNearestColumn (me, time);
-			if (col < 1) {
-				col = 1;
-			}
-			if (col > my nx) {
-				col = my nx;
-			}
-			integer row = Matrix_yToNearestRow (me, frequency);
-			if (row < 1) {
-				row = 1;
-			}
-			if (row > my ny) {
-				row = my ny;
-			}
-			result = my z[row][col];
-		}
+		const double result = Matrix_getValueAtNearestColRow (me, time, frequency);
 	QUERY_ONE_FOR_REAL_END (U"")
 }
 
@@ -4192,8 +4130,8 @@ FORM (GRAPHICS_EACH__MelFilter_paint, U"FilterBank: Paint", nullptr) {
 	OK
 DO
 	GRAPHICS_EACH (MelFilter)
-		FilterBank_paint (me, GRAPHICS, fromTime, toTime, 
-			fromFrequency, toFrequency, fromAmplitude, toAmplitude, garnish
+		FilterBank_paint (me, GRAPHICS, 
+			fromTime, toTime, fromFrequency, toFrequency, fromAmplitude, toAmplitude, garnish
 		);
 	GRAPHICS_EACH_END
 }
@@ -5868,6 +5806,15 @@ DO
 	CONVERT_EACH_TO_ONE_END (my name.get())
 }
 
+FORM (CONVERT_EACH_TO_ONE__Sound_to_Spectrum_dft2, U"", nullptr) {
+	NATURAL (precision, U"Precision (samples)", U"50")
+	OK
+DO
+	CONVERT_EACH_TO_ONE (Sound)
+		autoSpectrum result = Sound_to_Spectrum_dft (me, precision);
+	CONVERT_EACH_TO_ONE_END (my name.get())
+}
+
 // deprecated
 FORM (CONVERT_EACH_TO_ONE__Sound_to_FormantFilter, U"Sound: To FormantFilter", U"Sound: To FormantFilter...") {
 	POSITIVE (windowLength, U"Window length (s)", U"0.015")
@@ -5948,36 +5895,6 @@ DO
 	CONVERT_EACH_TO_ONE (Sound)
 		autoComplexSpectrogram result = Sound_to_ComplexSpectrogram (me, windowLength, maximumFrequency);
 	CONVERT_EACH_TO_ONE_END (my name.get())
-}
-
-FORM (CONVERT_EACH_TO_ONE__Sound_to_ConstantQLogFSpectrogram, U"Sound: To ConstantQLogFSpectrogram", U"Sound: To ConstantQLogFSpectrogram...") {
-	POSITIVE (f1, U"Lowest frequency (Hz)", U"110.0 (=440*2^(-2))")
-	REAL (fmax, U"Maximum frequency (Hz)", U"0.0 (=nyquist)")
-	NATURAL (numberOfFrequencyBinsPerOctave, U"Number of frequency bins / octave", U"24")
-	POSITIVE (frequencyResolutionInBins, U"Freqency resolution (bins)", U"1.0")
-	POSITIVE (timeOversamplingFactor, U"Time oversampling factor", U"1.0")
-	OK
-DO
-	CONVERT_EACH_TO_ONE (Sound)
-		autoConstantQLogFSpectrogram result = Sound_to_ConstantQLogFSpectrogram (me, f1, fmax, 
-			numberOfFrequencyBinsPerOctave, frequencyResolutionInBins, timeOversamplingFactor
-		);
-	CONVERT_EACH_TO_ONE_END (my name.get())
-}
-
-DIRECT (CONVERT_EACH_TO_ONE__ConstantQLogFSpectrogram_to_Sound) {
-	CONVERT_EACH_TO_ONE (ConstantQLogFSpectrogram)
-		autoSound result = ConstantQLogFSpectrogram_to_Sound (me);
-	CONVERT_EACH_TO_ONE_END (my name.get())
-}
-
-FORM (CONVERT_EACH_TO_ONE__ConstantQLogFSpectrogram_to_Sound_frequencyBin, U"ConstantQLogFSpectrogram: To Sound (frequencyBin)", nullptr) {
-	NATURAL (frequencyBinNumber, U"Frequency bin number", U"1")
-	OK
-DO
-	CONVERT_EACH_TO_ONE (ConstantQLogFSpectrogram)
-		autoSound result = ConstantQLogFSpectrogram_to_Sound_frequencyBin (me, frequencyBinNumber);
-	CONVERT_EACH_TO_ONE_END (my name.get(), U"_",frequencyBinNumber)
 }
 
 FORM (CONVERT_EACH_TO_ONE__Sound_to_Pitch_shs, U"Sound: To Pitch (shs)", U"Sound: To Pitch (shs)...") {
@@ -6289,7 +6206,7 @@ DO
 	MODIFY_EACH (Spectrum)
 		Melder_require (binNumber <= my nx, 
 			U"Your bin number should not exceed the number of bins (", my nx, U").");
-		my z[1][binNumber]= value;
+		my z [1] [binNumber] = value;
 	MODIFY_EACH_END
 }
 
@@ -6301,7 +6218,7 @@ DO
 	MODIFY_EACH (Spectrum)
 		Melder_require (binNumber <= my nx, 
 			U"Your bin number should not exceed the number of bins (", my nx, U").");
-		my z[2][binNumber]= value;
+		my z [2] [binNumber] = value;
 	MODIFY_EACH_END
 }
 
@@ -8815,7 +8732,6 @@ void praat_uvafon_David_init () {
 	Thing_recognizeClassesByName (classActivationList, classBarkFilter, classBarkSpectrogram,
 		classCategories, classCepstrum, classCCA,
 		classChebyshevSeries, classClassificationTable, classComplexSpectrogram, classConfusion,
-		classConstantQLogFSpectrogram,
 		classCorrelation, classCovariance, classDiscriminant, classDTW,
 		classEigen, classExcitationList, classEditCostsTable, classEditDistanceTable,
 		classElectroglottogram,
@@ -9596,19 +9512,6 @@ void praat_uvafon_David_init () {
 	praat_FunctionSeries_init (classLegendreSeries);
 	praat_addAction1 (classLegendreSeries, 0, U"To Polynomial", U"Analyse", 0, 
 			CONVERT_EACH_TO_ONE__LegendreSeries_to_Polynomial);
-
-	praat_addAction1 (classConstantQLogFSpectrogram, 0, U"Paint...", nullptr, 0, 
-			GRAPHICS_EACH__ConstantQLogFSpectrogram_paint);
-	praat_addAction1 (classConstantQLogFSpectrogram, 0, U"Formula...", nullptr, 0,
-			MODIFY_ConstantQLogFSpectrogram_formula);
-	praat_addAction1 (classConstantQLogFSpectrogram, 0, U"Formula (part)...", nullptr, 0, 
-			MODIFY_ConstantQLogFSpectrogram_formula_part);
-	praat_addAction1 (classConstantQLogFSpectrogram, 0, U"Translate spectrum...", nullptr, 0,
-			CONVERT_EACH_TO_ONE__ConstantQLogFSpectrogram_translateSpectrum);
-	praat_addAction1 (classConstantQLogFSpectrogram, 0, U"To Sound", nullptr, 0,
-			CONVERT_EACH_TO_ONE__ConstantQLogFSpectrogram_to_Sound);
-	praat_addAction1 (classConstantQLogFSpectrogram, 0, U"To Sound (frequencyBin)...", nullptr, 0,
-			CONVERT_EACH_TO_ONE__ConstantQLogFSpectrogram_to_Sound_frequencyBin);
 	
 	praat_addAction1 (classLongSound, 0, U"Append to existing sound file...", nullptr, 0,
 			APPEND_ALL__LongSounds_appendToExistingSoundFile);
@@ -10051,6 +9954,8 @@ void praat_uvafon_David_init () {
 	praat_addAction1 (classSound, 0, U"To Pitch (SPINET)...", U"To Pitch (cc)...", 1,
 			CONVERT_EACH_TO_ONE__Sound_to_Pitch_SPINET);
 
+	praat_addAction1 (classSound, 0, U"To Spectrum (dft)...", U"To Spectrum...", praat_DEPTH_1 + praat_HIDDEN,
+			CONVERT_EACH_TO_ONE__Sound_to_Spectrum_dft2);
 	praat_addAction1 (classSound, 0, U"To FormantFilter...", U"To Cochleagram (edb)...", praat_DEPRECATED_2014 | praat_DEPTH_1,
 			CONVERT_EACH_TO_ONE__Sound_to_FormantFilter);
 	praat_addAction1 (classSound, 0, U"To Spectrogram (pitch-dependent)...", U"To Cochleagram (edb)...", 1,
@@ -10067,8 +9972,6 @@ void praat_uvafon_David_init () {
 			CONVERT_EACH_TO_ONE__Sound_to_MelSpectrogram);
 	praat_addAction1 (classSound, 0, U"To ComplexSpectrogram...", U"To MelSpectrogram...", praat_DEPTH_1 + praat_HIDDEN,
 			CONVERT_EACH_TO_ONE__Sound_to_ComplexSpectrogram);
-	praat_addAction1 (classSound, 0, U"To ConstantQLogFSpectrogram...", U"To ComplexSpectrogram...", praat_DEPTH_1 + praat_HIDDEN,
-			CONVERT_EACH_TO_ONE__Sound_to_ConstantQLogFSpectrogram);
     praat_addAction1 (classSound, 0, U"Extract Electroglottogram...", U"Extract part for overlap...", 1,
 			CONVERT_EACH_TO_ONE__Sound_extractElectroglottogram);
 
@@ -10502,6 +10405,7 @@ void praat_uvafon_David_init () {
 	INCLUDE_MANPAGES (manual_dwtools_init)
 	INCLUDE_MANPAGES (manual_Permutation_init)
 
+	INCLUDE_LIBRARY (praat_MultiSampledSpectrogram_init)
 	INCLUDE_LIBRARY (praat_uvafon_MDS_init)
 	INCLUDE_LIBRARY (praat_KlattGrid_init)
 	INCLUDE_LIBRARY (praat_HMM_init)

@@ -158,12 +158,12 @@ void Eigen_initFromSquareRootPair (Eigen me, constMAT a, constMAT b) {
 	autoMAT bc = transpose_MAT (b);
 
 	(void) NUMlapack_dggsvd_ ("N", "N", "Q", m, n, p, & k, & ll,
-		& ac [1][1], m, & bc [1][1], p, & alpha [1], & beta [1], nullptr, m,
-		nullptr, p, & q [1][1], n, work.asArgumentToFunctionThatExpectsZeroBasedArray(), iwork.asArgumentToFunctionThatExpectsZeroBasedArray(), & info);
+		& ac [1] [1], m, & bc [1] [1], p, & alpha [1], & beta [1], nullptr, m,
+		nullptr, p, & q [1] [1], n, work.asArgumentToFunctionThatExpectsZeroBasedArray(), iwork.asArgumentToFunctionThatExpectsZeroBasedArray(), & info);
 	Melder_require (info == 0,
 		U"dggsvd fails with code ", info, U".");
 	/*
-		Calculate the eigenvalues (alpha[i]/beta[i])^2 and store in alpha[i].
+		Calculate the eigenvalues (alpha [i] / beta [i])^2 and store in alpha [i].
 	*/
 	for (integer i = k + 1; i <= k + ll; i ++) {
 		const double t = alpha [i] / beta [i];
@@ -226,7 +226,7 @@ integer Eigen_getNumberOfEigenvectors (Eigen me) {
 double Eigen_getEigenvectorElement (Eigen me, integer ivec, integer element) {
 	if (ivec > my numberOfEigenvalues || element < 1 || element > my dimension)
 		return undefined;
-	return my eigenvectors[ivec][element];
+	return my eigenvectors [ivec] [element];
 }
 
 integer Eigen_getDimensionOfComponents (Eigen me) {

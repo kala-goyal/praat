@@ -130,7 +130,7 @@ autoNMF NMF_create (integer numberOfRows, integer numberOfColumns, integer numbe
 static void MATmakeElementsNonNegative (MATVU const& m, int strategy) {
 	for (integer irow = 1; irow <= m.nrow; irow ++)
 		for (integer icol = 1; icol <= m.ncol; icol ++)
-			if (m [irow][icol] < 0.0)
+			if (m [irow] [icol] < 0.0)
 				m [irow] [icol] = strategy == 0 ? 0.0 : fabs (m [irow] [icol]);	
 }
 
@@ -433,12 +433,12 @@ void NMF_improveFactorization_is (NMF me, constMATVU const& data, integer maximu
 				algorithm 2, page 806
 				until convergence {
 					for k to numberOfFeateres {
-						G(k) = fcol(k) x wrow(k) / F.H                           (1)
-						V(k) = G(k)^(.2).V+(1-G(k)).(fcol(k) x wrow(k))          (2)
-						wrow(k) <-- (1/fcol(k))' . V(k) / numberOfRows           (3)
-						fcol(k) <-- V(k).(1/wrow(k))' / numberOfColumns          (4)
-						Normalize fcol(k) and wrow(k)                            (5)
-						F.H - old(fcol(k) x wrow(k)) + new(fcol(k) x wrow(k))    (6)
+						G(k) = fcol(k) x wrow (k) / F.H                           (1)
+						V(k) = G(k)^(.2).V+(1-G(k)).(fcol(k) x wrow (k))          (2)
+						wrow (k) <-- (1/fcol(k))' . V(k) / numberOfRows           (3)
+						fcol(k) <-- V(k).(1/wrow (k))' / numberOfColumns          (4)
+						Normalize fcol(k) and wrow (k)                            (5)
+						F.H - old(fcol(k) x wrow (k)) + new(fcol(k) x wrow (k))    (6)
 					}
 				}
 				There is no need to calculate G(k) explicitly as in (1).

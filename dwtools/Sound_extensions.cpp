@@ -615,7 +615,7 @@ autoSound Sound_readFromOggVorbisFile (MelderFile file) {
 									integer numberOfSamplesDecoded;
 									/*
 										The output from vorbis_synthesis_pcmout is a multichannel float vector. In stereo, for
-										example, pcmOutFloats[0] is the left channel, and pcmOutFloats[1] is the right.
+										example, pcmOutFloats [0] is the left channel, and pcmOutFloats [1] is the right.
 										The numberOfSamplesDecoded is the size of each channel, where all
 										floats are in the interval [-1.0, 1.0].
 									*/
@@ -1276,7 +1276,7 @@ autoSound Sound_createPlompTone (double minimumTime, double maximumTime, double 
 
 void Sounds_multiply (Sound me, Sound thee) {
 	const integer n = std::min (my nx, thy nx );
-	my z.row(1).part(1, n)  *=  thy z.row(1).part(1, n);
+	my z.row (1).part(1, n)  *=  thy z.row (1).part(1, n);
 }
 
 double Sound_power (Sound me) {
@@ -1317,20 +1317,6 @@ double Sound_correlateParts (Sound me, double tx, double ty, double duration) {
 	return rxy;
 }
 
-double Sound_localMean (Sound me, double fromTime, double toTime) {
-	integer n1 = Sampled_xToNearestIndex (me, fromTime);
-	integer n2 = Sampled_xToNearestIndex (me, toTime);
-	double mean = undefined;
-	if (fromTime <= toTime) {
-		if (n1 < 1)
-			n1 = 1;
-		if (n2 > my nx)
-			n2 = my nx;
-		Melder_assert (n1 <= n2);
-		mean = NUMmean (my z [1].part (n1, n2));
-	}
-	return mean;
-}
 
 static double interpolate (Sound me, integer i1, integer channel, double level)
 /* Precondition: my z [1] [i1] != my z [1] [i1 + 1]; */

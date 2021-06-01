@@ -158,26 +158,28 @@ static void scrollToView (TextGridEditor me, double t) {
 
 /***** FILE MENU *****/
 
-static void menu_cb_ExtractSelectedTextGrid_preserveTimes (TextGridEditor me, EDITOR_ARGS_DIRECT) {
-	if (my endSelection <= my startSelection)
-		Melder_throw (U"No selection.");
-	autoTextGrid extract = TextGrid_extractPart ((TextGrid) my data, my startSelection, my endSelection, true);
-	Editor_broadcastPublication (me, extract.move());
+static void CONVERT_DATA_TO_ONE__ExtractSelectedTextGrid_preserveTimes (TextGridEditor me, EDITOR_ARGS_DIRECT) {
+	CONVERT_DATA_TO_ONE
+		if (my endSelection <= my startSelection)
+			Melder_throw (U"No selection.");
+		autoTextGrid result = TextGrid_extractPart ((TextGrid) my data, my startSelection, my endSelection, true);
+	CONVERT_DATA_TO_ONE_END (U"untitled")
 }
 
-static void menu_cb_ExtractSelectedTextGrid_timeFromZero (TextGridEditor me, EDITOR_ARGS_DIRECT) {
-	if (my endSelection <= my startSelection)
-		Melder_throw (U"No selection.");
-	autoTextGrid extract = TextGrid_extractPart ((TextGrid) my data, my startSelection, my endSelection, false);
-	Editor_broadcastPublication (me, extract.move());
+static void CONVERT_DATA_TO_ONE__ExtractSelectedTextGrid_timeFromZero (TextGridEditor me, EDITOR_ARGS_DIRECT) {
+	CONVERT_DATA_TO_ONE
+		if (my endSelection <= my startSelection)
+			Melder_throw (U"No selection.");
+		autoTextGrid result = TextGrid_extractPart ((TextGrid) my data, my startSelection, my endSelection, false);
+	CONVERT_DATA_TO_ONE_END (U"untitled")
 }
 
 void structTextGridEditor :: v_createMenuItems_file_extract (EditorMenu menu) {
 	TextGridEditor_Parent :: v_createMenuItems_file_extract (menu);
-	extractSelectedTextGridPreserveTimesButton =
-		EditorMenu_addCommand (menu, U"Extract selected TextGrid (preserve times)", 0, menu_cb_ExtractSelectedTextGrid_preserveTimes);
-	extractSelectedTextGridTimeFromZeroButton =
-		EditorMenu_addCommand (menu, U"Extract selected TextGrid (time from 0)", 0, menu_cb_ExtractSelectedTextGrid_timeFromZero);
+	extractSelectedTextGridPreserveTimesButton = EditorMenu_addCommand (menu, U"Extract selected TextGrid (preserve times)", 0,
+			CONVERT_DATA_TO_ONE__ExtractSelectedTextGrid_preserveTimes);
+	extractSelectedTextGridTimeFromZeroButton = EditorMenu_addCommand (menu, U"Extract selected TextGrid (time from 0)", 0,
+			CONVERT_DATA_TO_ONE__ExtractSelectedTextGrid_timeFromZero);
 }
 
 static void menu_cb_WriteToTextFile (TextGridEditor me, EDITOR_ARGS_FORM) {
@@ -289,49 +291,46 @@ static void menu_cb_ConvertToUnicode (TextGridEditor me, EDITOR_ARGS_DIRECT) {
 
 /***** QUERY MENU *****/
 
-static void menu_cb_GetStartingPointOfInterval (TextGridEditor me, EDITOR_ARGS_DIRECT) {
-	const TextGrid grid = (TextGrid) my data;
-	checkTierSelection (me, U"query the starting point of an interval");
-	const Function anyTier = grid -> tiers->at [my selectedTier];
-	if (anyTier -> classInfo == classIntervalTier) {
+static void QUERY_DATA_FOR_REAL__GetStartingPointOfInterval (TextGridEditor me, EDITOR_ARGS_DIRECT) {
+	QUERY_DATA_FOR_REAL
+		const TextGrid grid = (TextGrid) my data;
+		checkTierSelection (me, U"query the starting point of an interval");
+		const Function anyTier = grid -> tiers->at [my selectedTier];
+		Melder_require (anyTier -> classInfo == classIntervalTier,
+			U"The selected tier is not an interval tier.");
 		const IntervalTier tier = (IntervalTier) anyTier;
 		const integer iinterval = IntervalTier_timeToIndex (tier, my startSelection);
-		const double time = ( iinterval < 1 || iinterval > tier -> intervals.size ? undefined :
+		const double result = ( iinterval < 1 || iinterval > tier -> intervals.size ? undefined :
 				tier -> intervals.at [iinterval] -> xmin );
-		Melder_informationReal (time, U"seconds");
-	} else {
-		Melder_throw (U"The selected tier is not an interval tier.");
-	}
+	QUERY_DATA_FOR_REAL_END (U" seconds")
 }
 
-static void menu_cb_GetEndPointOfInterval (TextGridEditor me, EDITOR_ARGS_DIRECT) {
-	const TextGrid grid = (TextGrid) my data;
-	checkTierSelection (me, U"query the end point of an interval");
-	const Function anyTier = grid -> tiers->at [my selectedTier];
-	if (anyTier -> classInfo == classIntervalTier) {
+static void QUERY_DATA_FOR_REAL__GetEndPointOfInterval (TextGridEditor me, EDITOR_ARGS_DIRECT) {
+	QUERY_DATA_FOR_REAL
+		const TextGrid grid = (TextGrid) my data;
+		checkTierSelection (me, U"query the end point of an interval");
+		const Function anyTier = grid -> tiers->at [my selectedTier];
+		Melder_require (anyTier -> classInfo == classIntervalTier,
+			U"The selected tier is not an interval tier.");
 		const IntervalTier tier = (IntervalTier) anyTier;
 		const integer iinterval = IntervalTier_timeToIndex (tier, my startSelection);
-		const double time = ( iinterval < 1 || iinterval > tier -> intervals.size ? undefined :
+		const double result = ( iinterval < 1 || iinterval > tier -> intervals.size ? undefined :
 				tier -> intervals.at [iinterval] -> xmax );
-		Melder_informationReal (time, U"seconds");
-	} else {
-		Melder_throw (U"The selected tier is not an interval tier.");
-	}
+	QUERY_DATA_FOR_REAL_END (U" seconds")
 }
 
-static void menu_cb_GetLabelOfInterval (TextGridEditor me, EDITOR_ARGS_DIRECT) {
-	const TextGrid grid = (TextGrid) my data;
-	checkTierSelection (me, U"query the label of an interval");
-	const Function anyTier = grid -> tiers->at [my selectedTier];
-	if (anyTier -> classInfo == classIntervalTier) {
+static void QUERY_DATA_FOR_STRING__GetLabelOfInterval (TextGridEditor me, EDITOR_ARGS_DIRECT) {
+	QUERY_DATA_FOR_STRING
+		const TextGrid grid = (TextGrid) my data;
+		checkTierSelection (me, U"query the label of an interval");
+		const Function anyTier = grid -> tiers->at [my selectedTier];
+		Melder_require (anyTier -> classInfo == classIntervalTier,
+			U"The selected tier is not an interval tier.");
 		const IntervalTier tier = (IntervalTier) anyTier;
 		const integer iinterval = IntervalTier_timeToIndex (tier, my startSelection);
-		const conststring32 label = ( iinterval < 1 || iinterval > tier -> intervals.size ? U"" :
+		const conststring32 result = ( iinterval < 1 || iinterval > tier -> intervals.size ? U"" :
 				tier -> intervals.at [iinterval] -> text.get() );
-		Melder_information (label);
-	} else {
-		Melder_throw (U"The selected tier is not an interval tier.");
-	}
+	QUERY_DATA_FOR_STRING_END
 }
 
 /***** VIEW MENU *****/
@@ -995,14 +994,14 @@ static void menu_cb_RenameTier (TextGridEditor me, EDITOR_ARGS_FORM) {
 	EDITOR_END
 }
 
-static void menu_cb_PublishTier (TextGridEditor me, EDITOR_ARGS_DIRECT) {
-	const TextGrid grid = (TextGrid) my data;
-	checkTierSelection (me, U"publish a tier");
-	const Function tier = grid -> tiers->at [my selectedTier];
-	autoTextGrid publish = TextGrid_createWithoutTiers (1e30, -1e30);
-	TextGrid_addTier_copy (publish.get(), tier);
-	Thing_setName (publish.get(), tier -> name.get());
-	Editor_broadcastPublication (me, publish.move());
+static void CONVERT_DATA_TO_ONE__PublishTier (TextGridEditor me, EDITOR_ARGS_DIRECT) {
+	CONVERT_DATA_TO_ONE
+		const TextGrid grid = (TextGrid) my data;
+		checkTierSelection (me, U"publish a tier");
+		const Function tier = grid -> tiers->at [my selectedTier];
+		autoTextGrid result = TextGrid_createWithoutTiers (1e30, -1e30);
+		TextGrid_addTier_copy (result.get(), tier);
+	CONVERT_DATA_TO_ONE_END (tier -> name.get())
 }
 
 static void menu_cb_RemoveAllTextFromTier (TextGridEditor me, EDITOR_ARGS_DIRECT) {
@@ -1126,10 +1125,10 @@ static void menu_cb_DuplicateTier (TextGridEditor me, EDITOR_ARGS_FORM) {
 
 /***** HELP MENU *****/
 
-static void menu_cb_TextGridEditorHelp (TextGridEditor, EDITOR_ARGS_DIRECT) { Melder_help (U"TextGridEditor"); }
-static void menu_cb_AboutSpecialSymbols (TextGridEditor, EDITOR_ARGS_DIRECT) { Melder_help (U"Special symbols"); }
-static void menu_cb_PhoneticSymbols (TextGridEditor, EDITOR_ARGS_DIRECT) { Melder_help (U"Phonetic symbols"); }
-static void menu_cb_AboutTextStyles (TextGridEditor, EDITOR_ARGS_DIRECT) { Melder_help (U"Text styles"); }
+static void menu_cb_TextGridEditorHelp (TextGridEditor, EDITOR_ARGS_DIRECT) { HELP (U"TextGridEditor") }
+static void menu_cb_AboutSpecialSymbols (TextGridEditor, EDITOR_ARGS_DIRECT) { HELP (U"Special symbols") }
+static void menu_cb_PhoneticSymbols (TextGridEditor, EDITOR_ARGS_DIRECT) { HELP (U"Phonetic symbols") }
+static void menu_cb_AboutTextStyles (TextGridEditor, EDITOR_ARGS_DIRECT) { HELP (U"Text styles") }
 
 void structTextGridEditor :: v_createMenus () {
 	TextGridEditor_Parent :: v_createMenus ();
@@ -1162,9 +1161,12 @@ void structTextGridEditor :: v_createMenus () {
 	}
 
 	Editor_addCommand (this, U"Query", U"-- query interval --", 0, nullptr);
-	Editor_addCommand (this, U"Query", U"Get starting point of interval", 0, menu_cb_GetStartingPointOfInterval);
-	Editor_addCommand (this, U"Query", U"Get end point of interval", 0, menu_cb_GetEndPointOfInterval);
-	Editor_addCommand (this, U"Query", U"Get label of interval", 0, menu_cb_GetLabelOfInterval);
+	Editor_addCommand (this, U"Query", U"Get starting point of interval", 0,
+			QUERY_DATA_FOR_REAL__GetStartingPointOfInterval);
+	Editor_addCommand (this, U"Query", U"Get end point of interval", 0,
+			QUERY_DATA_FOR_REAL__GetEndPointOfInterval);
+	Editor_addCommand (this, U"Query", U"Get label of interval", 0,
+			QUERY_DATA_FOR_STRING__GetLabelOfInterval);
 
 	menu = Editor_addMenu (this, U"Interval", 0);
 	if (our d_sound.data || our d_longSound.data) {
@@ -1210,8 +1212,10 @@ void structTextGridEditor :: v_createMenus () {
 	EditorMenu_addCommand (menu, U"Remove all text from tier", 0, menu_cb_RemoveAllTextFromTier);
 	EditorMenu_addCommand (menu, U"Remove entire tier", 0, menu_cb_RemoveTier);
 	EditorMenu_addCommand (menu, U"-- extract tier --", 0, nullptr);
-	EditorMenu_addCommand (menu, U"Extract to list of objects:", GuiMenu_INSENSITIVE, menu_cb_PublishTier /* dummy */);
-	EditorMenu_addCommand (menu, U"Extract entire selected tier", 0, menu_cb_PublishTier);
+	EditorMenu_addCommand (menu, U"Extract to list of objects:", GuiMenu_INSENSITIVE,
+			CONVERT_DATA_TO_ONE__PublishTier /* dummy */);
+	EditorMenu_addCommand (menu, U"Extract entire selected tier", 0,
+			CONVERT_DATA_TO_ONE__PublishTier);
 
 	if (our spellingChecker) {
 		menu = Editor_addMenu (this, U"Spell", 0);
@@ -1615,7 +1619,7 @@ void structTextGridEditor :: v_draw () {
 			Graphics_line (our graphics.get(), our endWindow, soundY, our endWindow, soundY2);
 		}
 	}
-	if (isdefined (our draggingTime)) {
+	if (isdefined (our draggingTime) && hasBeenDraggedBeyondVicinityRadiusAtLeastOnce) {
 		Graphics_xorOn (our graphics.get(), Melder_MAROON);
 		for (integer itier = 1; itier <= numberOfTiers; itier ++) {
 			if (our draggingTiers [itier]) {
@@ -1660,7 +1664,11 @@ void structTextGridEditor :: v_drawSelectionViewer () {
 	Graphics_fillRectangle (our graphics.get(), 0.5, 10.5, 0.5, 12.5);
 	Graphics_setColour (our graphics.get(), Melder_BLACK);
 	Graphics_setFont (our graphics.get(), kGraphics_font::TIMES);
-	Graphics_setFontSize (our graphics.get(), 12);
+	const double pointsPerMillimetre = 72.0 / 25.4;
+	const double cellWidth_points = Graphics_dxWCtoMM (our graphics.get(), 1.0) * pointsPerMillimetre;
+	const double cellHeight_points = Graphics_dyWCtoMM (our graphics.get(), 1.0) * pointsPerMillimetre;
+	const double fontSize = std::min (0.8 * cellHeight_points, 1.2 * cellWidth_points);
+	Graphics_setFontSize (our graphics.get(), fontSize);
 	Graphics_setTextAlignment (our graphics.get(), Graphics_CENTRE, Graphics_HALF);
 	for (integer irow = 1; irow <= 12; irow ++)
 		for (integer icol = 1; icol <= 10; icol ++)
@@ -1678,11 +1686,10 @@ bool structTextGridEditor :: v_mouseInWideDataView (GuiDrawingArea_MouseEvent ev
 	static bool anchorIsInWideTextGridPart = false;
 	static double anchorTime = undefined;
 	static integer clickedLeftBoundary = 0, clickedPoint = 0;
-	static bool hasBeenDraggedBeyondVicinityRadiusAtLeastOnce = false;
 	static double leftDraggingBoundary = our tmin, rightDraggingBoundary = our tmax;   // initial dragging range
 
 	constexpr double clickingVicinityRadius_mm = 1.0;
-	constexpr double draggingVicinityRadius_mm = clickingVicinityRadius_mm + 1.0;   // must be greater than `clickingVicinityRadius_mm`
+	constexpr double draggingVicinityRadius_mm = clickingVicinityRadius_mm + 0.2;   // must be greater than `clickingVicinityRadius_mm`
 	constexpr double droppingVicinityRadius_mm = 1.5;
 
 	if (event -> isClick()) {
@@ -1699,14 +1706,14 @@ bool structTextGridEditor :: v_mouseInWideDataView (GuiDrawingArea_MouseEvent ev
 	if (anchorIsInWideSoundOrAnalysisPart)
 		return our TextGridEditor_Parent :: v_mouseInWideDataView (event, xWC, yWC);
 	Melder_assert (anchorIsInWideTextGridPart);
-	integer mouseTier = _TextGridEditor_yWCtoTier (this, yWC);
+	const integer mouseTier = _TextGridEditor_yWCtoTier (this, yWC);
 
 	our draggingTime = undefined;   // information to next expose event
 	if (event -> isClick()) {
 		if (isdefined (anchorTime))   // sanity check for the fixed order click-drag-drop
 			return false;
 		Melder_assert (clickedLeftBoundary == 0);
-		Melder_assert (! hasBeenDraggedBeyondVicinityRadiusAtLeastOnce);
+		Melder_assert (! our hasBeenDraggedBeyondVicinityRadiusAtLeastOnce);
 		our draggingTiers.reset();
 		/*
 			The user clicked in the grid part.
@@ -1775,9 +1782,18 @@ bool structTextGridEditor :: v_mouseInWideDataView (GuiDrawingArea_MouseEvent ev
 				const bool isRightEdgeOfLastInterval = ( clickedLeftBoundary > selectedIntervalTier -> intervals.size );
 				boundaryOrPointIsMovable = ! isLeftEdgeOfFirstInterval && ! isRightEdgeOfLastInterval;
 			}
+			/*
+				If the user clicked on an unselected boundary or point, we extend or shrink the selection to it.
+			*/
+			if (event -> shiftKeyPressed) {
+				if (anchorTime > 0.5 * (our startSelection + our endSelection))
+					our endSelection = anchorTime;
+				else
+					our startSelection = anchorTime;
+			}
 			if (! boundaryOrPointIsMovable) {
 				our draggingTime = undefined;
-				hasBeenDraggedBeyondVicinityRadiusAtLeastOnce = false;
+				our hasBeenDraggedBeyondVicinityRadiusAtLeastOnce = false;
 				anchorTime = undefined;
 				clickedLeftBoundary = 0;
 				return FunctionEditor_UPDATE_NEEDED;
@@ -1843,16 +1859,26 @@ bool structTextGridEditor :: v_mouseInWideDataView (GuiDrawingArea_MouseEvent ev
 	} else if (event -> isDrag ()) {
 		if (isdefined (anchorTime) && our draggingTiers.size > 0) {
 			our draggingTime = xWC;
-			if (! hasBeenDraggedBeyondVicinityRadiusAtLeastOnce) {
+			if (! our hasBeenDraggedBeyondVicinityRadiusAtLeastOnce) {
 				const double distanceToAnchor_mm = fabs (Graphics_dxWCtoMM (our graphics.get(), xWC - anchorTime));
 				if (distanceToAnchor_mm > draggingVicinityRadius_mm)
-					hasBeenDraggedBeyondVicinityRadiusAtLeastOnce = true;
+					our hasBeenDraggedBeyondVicinityRadiusAtLeastOnce = true;
 			}
 		}
 	} else if (event -> isDrop ()) {
 		if (our draggingTiers.size == 0) {
 			our draggingTime = undefined;
-			hasBeenDraggedBeyondVicinityRadiusAtLeastOnce = false;
+			our hasBeenDraggedBeyondVicinityRadiusAtLeastOnce = false;
+			anchorTime = undefined;
+			clickedLeftBoundary = 0;
+			return FunctionEditor_UPDATE_NEEDED;
+		}
+		/*
+			If the use shift-clicked, we extend the selection (this already happened during click()).
+		*/
+		if (event -> shiftKeyPressed) {
+			our draggingTime = undefined;
+			our hasBeenDraggedBeyondVicinityRadiusAtLeastOnce = false;
 			anchorTime = undefined;
 			clickedLeftBoundary = 0;
 			return FunctionEditor_UPDATE_NEEDED;
@@ -1901,10 +1927,10 @@ bool structTextGridEditor :: v_mouseInWideDataView (GuiDrawingArea_MouseEvent ev
 			If the user wiggled near the anchor, we snap to the anchor and bail out
 			(a boundary has been selected, but nothing has been dragged).
 		*/
-		if (! hasBeenDraggedBeyondVicinityRadiusAtLeastOnce && ! droppedOnABoundaryOrPointInsideAnUnselectedTier) {
+		if (! our hasBeenDraggedBeyondVicinityRadiusAtLeastOnce && ! droppedOnABoundaryOrPointInsideAnUnselectedTier) {
 			our startSelection = our endSelection = anchorTime;
 			our draggingTime = undefined;
-			hasBeenDraggedBeyondVicinityRadiusAtLeastOnce = false;
+			our hasBeenDraggedBeyondVicinityRadiusAtLeastOnce = false;
 			anchorTime = undefined;
 			clickedLeftBoundary = 0;
 			return FunctionEditor_UPDATE_NEEDED;
@@ -1916,7 +1942,7 @@ bool structTextGridEditor :: v_mouseInWideDataView (GuiDrawingArea_MouseEvent ev
 		if (xWC <= leftDraggingBoundary || xWC >= rightDraggingBoundary) {
 			Melder_beep ();
 			our draggingTime = undefined;
-			hasBeenDraggedBeyondVicinityRadiusAtLeastOnce = false;
+			our hasBeenDraggedBeyondVicinityRadiusAtLeastOnce = false;
 			anchorTime = undefined;
 			clickedLeftBoundary = 0;
 			return FunctionEditor_UPDATE_NEEDED;
@@ -1965,7 +1991,7 @@ bool structTextGridEditor :: v_mouseInWideDataView (GuiDrawingArea_MouseEvent ev
 		our startSelection = our endSelection = xWC;
 		Melder_sort (& our startSelection, & our endSelection);
 		our draggingTime = undefined;
-		hasBeenDraggedBeyondVicinityRadiusAtLeastOnce = false;
+		our hasBeenDraggedBeyondVicinityRadiusAtLeastOnce = false;
 		anchorTime = undefined;
 		clickedLeftBoundary = 0;
 		//FunctionEditor_marksChanged (this, true);

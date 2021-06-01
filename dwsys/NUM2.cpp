@@ -222,12 +222,12 @@ void MATmtm_weighRows (MATVU const& result, constMATVU const& data, constVECVU c
 inline void MATmultiplyRows_inplace (MATVU const& x, constVECVU const& v) {
 	Melder_assert (x.nrow == v.size);
 	for (integer irow = 1; irow <= x.nrow; irow ++)
-		x.row (irow)  *=  v [irow];  // x[i,j]*v[i]
+		x.row (irow)  *=  v [irow];  // x [i,j] * v [i]
 }
 inline void MATmultiplyColumns_inplace (MATVU const& x, constVECVU const& v) {
 	Melder_assert (x.ncol == v.size);
 	for (integer icol = 1; icol <= x.nrow; icol ++)
-		x.column (icol)  *=  v [icol];  // x[i,j]*v[j]
+		x.column (icol)  *=  v [icol];  // x [i,j] * v [j]
 }
 
 double NUMmultivariateKurtosis (constMATVU const& m, integer method) {
@@ -309,7 +309,7 @@ autoMAT newMATlowerCholesky (constMATVU const& a, double *out_lnd) {
 	MATlowerCholesky_inplace (result.get(), out_lnd);
 	for (integer irow = 1; irow <= a.nrow - 1; irow ++)
 		for (integer icol = irow + 1; icol <= a.nrow; icol ++)
-			result [irow][icol] = 0.0;
+			result [irow] [icol] = 0.0;
 	return result;
 }
 
@@ -455,12 +455,15 @@ autoMAT newMATsolve (constMATVU const& a, constMATVU const& b, double tolerance)
 	return x;
 }
 
+/*
+	Non-negative least squares: Solve Ax = y, i.e
+	minimize || Ax - y ||^2 for vector x, where all x [i] >= 0.0
+*/
 void VECsolveNonnegativeLeastSquaresRegression (VECVU const& x, constMATVU const& a, constVECVU const& y, integer maximumNumberOfIterations, double tol, integer infoLevel) {
 	Melder_assert (a.nrow == y.size);
 	Melder_assert (a.ncol == x.size);
 	for (integer i = 1; i <= x.size; i ++)
-		if (x [i] < 0.0)
-			x [i] = 0.0;
+		Melder_clipLeft (0.0, & x [i]);
 	autoVEC r = raw_VEC (y.size);
 	const double normSquared_y = NUMsum2 (y);
 	integer iter = 1;
@@ -657,7 +660,7 @@ static double bolzanoFunction (double b, void *data) {
 	return (double) f;
 }
 
-double NUMbolzanoSearch (double (*func) (double x, void *closure), double xmin, double xmax, void *closure) {
+static double NUMbolzanoSearch (double (*func) (double x, void *closure), double xmin, double xmax, void *closure) {
 	Melder_assert (xmin < xmax);
 	double fleft = (*func)(xmin, closure);
 	double fright = (*func)(xmax, closure);
@@ -667,9 +670,8 @@ double NUMbolzanoSearch (double (*func) (double x, void *closure), double xmin, 
 		return fright;
 	Melder_require (fleft * fright < 0.0,
 		U"Invalid interval: the function values at the borders should have different signs.");
-	double xdifference = fabs (xmax - xmin);
-	double xdifference_old = 2.0 * xdifference; // just larger to make the first comparison 'true'.
-	while (xdifference < xdifference_old) {
+	double xdifference = fabs (xmax - xmin), xdifference_old;
+	do {
 		const double xmid = 0.5 * (xmax + xmin);
 		const double fmid = (*func)(xmid, closure);
 		if (fmid == 0.0)
@@ -680,7 +682,7 @@ double NUMbolzanoSearch (double (*func) (double x, void *closure), double xmin, 
 			xmin = xmid;
 		xdifference_old = xdifference;
 		xdifference = fabs (xmax - xmin);
-	}
+	} while (xdifference < xdifference_old);
 	return 0.5 * (xmax + xmin);
 }
 
@@ -716,7 +718,7 @@ autoVEC newVECsolveWeaklyConstrainedLinearRegression (constMAT const& a, constVE
 	}
 	/*
 		Evaluate q, the multiplicity of the smallest eigenvalue in C.
-		The c[i] are ordered, i.e. c[i] >= c[i+1] for all i.
+		The c [i] are ordered, i.e. c [i] >= c [i+1] for all i.
 	*/
 	integer q = 1;
 	const double tol = 1e-6;
@@ -742,7 +744,7 @@ autoVEC newVECsolveWeaklyConstrainedLinearRegression (constMAT const& a, constVE
 	if (xqsq < tol) { // Case3.b page 608
 		r = a.ncol - q;
 		me.numberOfTerms = r;
-		const double fm = bolzanoFunction (c[a.ncol], & me);
+		const double fm = bolzanoFunction (c [a.ncol], & me);
 		if (fm >= 0.0) { // step 3.b1
 			/*
 				Get w0 by overwriting vector x.
@@ -1310,7 +1312,7 @@ double NUMlnBeta (double a, double b) {
 	return status == GSL_SUCCESS ? result.val : undefined;
 }
 
-void MATscaledResiduals (MAT const& residuals, constMAT const& data, constMAT const& covariance, constVEC const& means) {
+static void MATscaledResiduals (MAT const& residuals, constMAT const& data, constMAT const& covariance, constVEC const& means) {
 	try {
 		Melder_require (residuals.nrow == data.nrow && residuals.ncol == data.ncol,
 			U"The data and the residuals should have the same dimensions.");
@@ -1321,12 +1323,12 @@ void MATscaledResiduals (MAT const& residuals, constMAT const& data, constMAT co
 		MATlowerCholeskyInverse_inplace (lowerInverse.get(), nullptr);
 		for (integer irow = 1; irow <= data.nrow; irow ++) {
 			dif.all()  <<=  data.row (irow)  -  means;
-			residuals.row(irow)  <<=  0.0;
+			residuals.row (irow)  <<=  0.0;
 			if (lowerInverse.nrow == 1) { // diagonal matrix is one row matrix
-				residuals.row(irow)  <<=  lowerInverse.row(1)  *  dif.get();
+				residuals.row (irow)  <<=  lowerInverse.row (1)  *  dif.get();
 			} else {// square matrix
 				for (integer icol = 1; icol <= data.ncol; icol ++)
-					residuals [irow] [icol] = NUMinner (lowerInverse.row(icol).part (1, icol), dif.part (1, icol));
+					residuals [irow] [icol] = NUMinner (lowerInverse.row (icol).part (1, icol), dif.part (1, icol));
 			}
 		}
 	} catch (MelderError) {
@@ -1372,34 +1374,11 @@ double NUMbarkToHertz_traunmueller (double bark) {
 	return 1960.0 * (bark + 0.53) / (26.28 - bark);
 }
 
-double NUMbarkToHertz_schroeder (double bark) {
-	return 650.0 * sinh (bark / 7.0);
-}
 
 double NUMbarkToHertz_zwickerterhardt (double hz) {
 	if (hz < 0.0)
 		return undefined;
 	return 13.0 * atan (0.00076 * hz) + 3.5 * atan (hz / 7500.0);
-}
-
-double NUMhertzToBark_schroeder (double hz) {
-	if (hz < 0.0)
-		return undefined;
-	const double h650 = hz / 650.0;
-	return 7.0 * log (h650 + sqrt (1.0 + h650 * h650));
-}
-
-double NUMbarkToHertz2 (double bark) {
-	if (bark < 0.0)
-		return undefined;
-	return 650.0 * sinh (bark / 7.0);
-}
-
-double NUMhertzToBark2 (double hz) {
-	if (hz < 0)
-		return undefined;
-	const double h650 = hz / 650.0;
-	return 7.0 * log (h650 + sqrt (1.0 + h650 * h650));
 }
 
 double NUMbladonlindblomfilter_amplitude (double zc, double z) {
@@ -1442,7 +1421,7 @@ double VECburg (VEC const& a, constVEC const& x) {
 		a [j] = 0.0;
 	if (n <= 2) {
 		a [1] = -1.0;
-		return ( n == 2 ? 0.5 * (x [1] * x[1] + x [2] * x [2]) : x [1] * x[1] );
+		return ( n == 2 ? 0.5 * (x [1] * x [1] + x [2] * x [2]) : x [1] * x [1] );
 	}
 
 	autoVEC b1 = zero_VEC (n), b2 = zero_VEC (n), aa = zero_VEC (m);
@@ -2636,7 +2615,7 @@ double NUMrandomBinomial_real (double p, integer n) {
 }
 
 double NUMrandomWeibull (double scale_lambda, double shape_k) {
-	Melder_require (scale_lambda > 0 && shape_k > 0,
+	Melder_require (scale_lambda > 0.0 && shape_k > 0.0,
 		U"NUMrandomWeibull: both arguments should be positive.");
 	const double u = NUMrandomUniform (0, 1);
 	return scale_lambda * pow (- log (u), 1.0 / shape_k);	
@@ -2705,8 +2684,8 @@ double NUMbiharmonic2DSplineInterpolation (constVECVU const& x, constVECVU const
 	Melder_assert (x.size == y.size && x.size == w.size);
 	longdouble result = 0.0;
 	for (integer i = 1; i <= x.size; i ++) {
-		double dx = xp - x [i], dy = yp - y [i];
-		double d = dx * dx + dy * dy;
+		const double dx = xp - x [i], dy = yp - y [i];
+		const double d = dx * dx + dy * dy;
 		result += w [i] * d * (0.5 * log (d) - 1.0);
 	}
 	return (double) result;
@@ -2748,9 +2727,9 @@ void NUMgetEntropies (constMATVU const& m, double *out_h, double *out_hx, double
 	if (totalSum > 0.0) {
 		longdouble hy_t = 0.0;
 		for (integer i = 1; i <= m.nrow; i ++) {
-			double rowsum = NUMsum (m.row (i));
+			const double rowsum = NUMsum (m.row (i));
 			if (rowsum > 0.0) {
-				double p = rowsum / totalSum;
+				const double p = rowsum / double (totalSum);
 				hy_t -= p * NUMlog2 (p);
 			}
 		}
@@ -2758,9 +2737,9 @@ void NUMgetEntropies (constMATVU const& m, double *out_h, double *out_hx, double
 		
 		longdouble hx_t = 0.0;
 		for (integer j = 1; j <= m.ncol; j ++) {
-			double colsum = NUMsum (m.column (j));
+			const double colsum = NUMsum (m.column (j));
 			if (colsum > 0.0) {
-				double p = colsum / totalSum;
+				const double p = colsum / double (totalSum);
 				hx_t -= p * NUMlog2 (p);
 			}
 		}
@@ -2771,7 +2750,7 @@ void NUMgetEntropies (constMATVU const& m, double *out_h, double *out_hx, double
 		for (integer i = 1; i <= m.nrow; i ++) {
 			for (integer j = 1; j <= m.ncol; j ++) {
 				if (m [i] [j] > 0.0) {
-					double p = m [i] [j] / totalSum;
+					const double p = m [i] [j] / double (totalSum);
 					h_t -= p * NUMlog2 (p);
 				}
 			}
@@ -2803,7 +2782,7 @@ void NUMgetEntropies (constMATVU const& m, double *out_h, double *out_hx, double
 }
 #undef TINY
 
-double NUMtrace (const constMATVU& a) {
+double NUMtrace (constMATVU const& a) {
 	Melder_assert (a.nrow == a.ncol);
 	longdouble trace = 0.0;
 	for (integer i = 1; i <= a.nrow; i ++)
@@ -2811,7 +2790,7 @@ double NUMtrace (const constMATVU& a) {
 	return (double) trace;
 }
 
-double NUMtrace2 (const constMATVU& x, const constMATVU& y) {
+double NUMtrace2 (constMATVU const& x, constMATVU const& y) {
 	Melder_assert (x.ncol == y.nrow && x.nrow == y.ncol);
 	longdouble trace = 0.0;
 	for (integer irow = 1; irow <= x.nrow; irow ++)
@@ -2917,11 +2896,11 @@ void MATmul3_XYXt (MATVU const& target, constMATVU const& x, constMATVU const& y
 			longdouble sum = 0.0;
 			for (integer k = 1; k <= x.ncol; k ++)
 				sum += x [irow] [k] * NUMinner (y.row (k), x.row (icol));
-			target [irow] [icol] = sum;
+			target [irow] [icol] = double (sum);
 		}
 }
 
-void MATmul3_XYsXt (MATVU const& target, constMAT const& x, constMAT const& y) { // X.Y.X'
+void MATmul3_XYsXt (MATVU const& target, constMATVU const& x, constMATVU const& y) { // X.Y.X'
 	Melder_assert (x.ncol == y.nrow && y.ncol == x.ncol);
 	Melder_assert (target.nrow == target.ncol && target.nrow == x.nrow);
 	for (integer irow = 1; irow <= target.nrow; irow ++)
@@ -2929,7 +2908,7 @@ void MATmul3_XYsXt (MATVU const& target, constMAT const& x, constMAT const& y) {
 			longdouble sum = 0.0;
 			for (integer k = 1; k <= x.ncol; k ++)
 				sum += x [irow] [k] * NUMinner (y.row (k), x.row (icol));
-			target [irow] [icol] = sum;
+			target [irow] [icol] = double (sum);
 		}
 	for (integer irow = 1; irow <= target.nrow; irow ++)
 		for (integer icol = irow + 1; icol <= target.ncol; icol ++)

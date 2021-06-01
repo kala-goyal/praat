@@ -42,7 +42,7 @@ autoTableOfReal TableOfReal_sortOnlyByRowLabels (TableOfReal me);
 autoINTVEC TableOfReal_getSortedIndexFromRowLabels (TableOfReal me);
 
 autoTableOfReal TableOfReal_sortRowsByIndex (TableOfReal me, constINTVEC index, bool reverse);
-// thy data[reverse ? i : index[i]][j] = my data[reverse ? index[i] : i]
+// thy data [reverse ? i : index [i]] [j] = my data [reverse ? index [i] : i]
 
 autoTableOfReal TableOfReal_createIrisDataset ();
 
@@ -204,6 +204,6 @@ bool TableOfRealList_haveIdenticalDimensions (TableOfRealList me);
 
 autoTableOfReal TableOfRealList_appendColumnsMany (TableOfRealList me);
 
-autoMatrix TableOfReal_to_Matrix_interpolateOnRectangularGrid (TableOfReal me, double xmin, double xmax, double nx, double ymin, double ymax, integer ny, int /* method */);
+autoMatrix TableOfReal_to_Matrix_interpolateOnRectangularGrid (TableOfReal me, double xmin, double xmax, double nx, double ymin, double ymax, integer ny, int method);
 
 #endif /* _TableOfReal_extensions_h_ */

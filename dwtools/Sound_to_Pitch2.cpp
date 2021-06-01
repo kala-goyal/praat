@@ -30,6 +30,12 @@
 #include "SPINET_to_Pitch.h"
 #include "NUM2.h"
 
+static double Sound_approximateLocalSampleMean (Sound me, double fromTime, double toTime) {
+	const integer n1 = Melder_clippedLeft (1_integer, Sampled_xToNearestIndex (me, fromTime));
+	const integer n2 = Melder_clippedRight (Sampled_xToNearestIndex (me, toTime), my nx);
+	return n1 <= n2 ? NUMmean (my z [1].part (n1, n2)) : undefined;
+}
+
 static void spec_enhance_SHS (VEC const & a) {
 	Melder_assert (a.size >= 2);
 
@@ -61,8 +67,8 @@ static void spec_smoooth_SHS (VEC const& a) {
 		The basic equation for an output element a_new [i] is:
 			a_new [i] := 0.25 * (a [i - 1] + 2.0 * a [i] + a [i + 1])
 
-		The procedure is performed in place, i.e., the vector a_new[]
-		appears as the new version of the vector a[], so that care has
+		The procedure is performed in place, i.e., the vector a_new []
+		appears as the new version of the vector a [], so that care has
 		to be taken to timely save elements that will be overwritten.
 		At the edges we perform "same" convolution, meaning that
 		the output vector has the same number of elements as the
@@ -127,7 +133,7 @@ autoPitch Sound_to_Pitch_shs (Sound me, double timeStep, double minimumPitch, do
 		/*
 			Compute the absolute value of the globally largest amplitude w.r.t. the global mean.
 		*/
-		const double globalMean = Sound_localMean (sound.get(), sound -> xmin, sound -> xmax);
+		const double globalMean = Sound_approximateLocalSampleMean (sound.get(), sound -> xmin, sound -> xmax);
 		const double globalPeak = Sound_localPeak (sound.get(), sound -> xmin, sound -> xmax, globalMean);
 		/*
 			For the cubic spline interpolation we need the frequencies on an octave
@@ -154,7 +160,7 @@ autoPitch Sound_to_Pitch_shs (Sound me, double timeStep, double minimumPitch, do
 			*/
 			Sound_into_Sound (sound.get(), analysisframe.get(), tmid - halfWindow);
 			Sounds_multiply (analysisframe.get(), hamming.get());
-			const double localMean = Sound_localMean (sound.get(), tmid - 3.0 * halfWindow, tmid + 3.0 * halfWindow);
+			const double localMean = Sound_approximateLocalSampleMean (sound.get(), tmid - 3.0 * halfWindow, tmid + 3.0 * halfWindow);
 			const double localPeak = Sound_localPeak (sound.get(), tmid - halfWindow, tmid + halfWindow, localMean);
 			pitchFrame -> intensity = localPeak > globalPeak ? 1.0 : localPeak / globalPeak;
 			/*

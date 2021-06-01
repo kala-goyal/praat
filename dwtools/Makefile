@@ -1,19 +1,19 @@
 # Makefile of the library "dwtools"
 # David Weenink and Paul Boersma
-# 24 April 2021
+# 23 May 2021
 
 include ../makefile.defs
 
 CPPFLAGS = -I . -I ../kar -I ../melder -I ../LPC -I ../fon -I ../sys -I ../stat -I ../dwsys -I ../external/portaudio -I ../external/espeak -I ../external/clapack -I ../EEG -I ../external/vorbis -I ../external/opusfile
 
-OBJECTS = ActivationList.o AffineTransform.o \
+OBJECTS = ActivationList.o AffineTransform.o AnalyticSound.o \
 	Categories.o CategoriesEditor.o \
 	Categories_and_Strings.o CCA.o CCA_and_Correlation.o \
 	Correlation.o Covariance.o CC.o CCs_to_DTW.o \
 	ClassificationTable.o Confusion.o \
 	ComplexSpectrogram.o Configuration.o ContingencyTable.o \
 	Configuration_AffineTransform.o \
-	Configuration_and_Procrustes.o ConstantQLogFSpectrogram.o \
+	Configuration_and_Procrustes.o ConstantQSpectrograms.o \
 	DataModeler.o Distance.o \
 	DTW.o DTW_and_TextGrid.o \
 	Discriminant.o  Discriminant_PatternList_Categories.o \
@@ -42,11 +42,13 @@ OBJECTS = ActivationList.o AffineTransform.o \
 	Polygon_extensions.o Procrustes.o \
 	Proximity.o Proximity_and_Distance.o \
 	Resonator.o Roots_to_Spectrum.o \
-	Sound_and_ConstantQLogFSpectrogram.o Sound_and_MixingMatrix.o \
+	Sound_and_MultiSampledSpectrogram.o Sound_and_MixingMatrix.o \
+	Sound_and_Spectrum_dft.o \
 	Sound_and_Spectrogram_extensions.o Sound_and_PCA.o Sound_extensions.o \
 	Sound_to_MFCC.o Sounds_to_DTW.o \
 	Sound_to_Pitch2.o Sound_to_SPINET.o SPINET.o SPINET_to_Pitch.o \
-	Spectrogram_extensions.o Spectrum_extensions.o SSCP.o Strings_extensions.o \
+	Spectrogram_extensions.o Spectrum_extensions.o Spectrum_and_MultiSampledSpectrogram.o \
+	SSCP.o Strings_extensions.o \
 	SpeechSynthesizer.o SpeechSynthesizer_and_TextGrid.o \
 	Table_and_Strings.o Table_extensions.o TableOfReal_and_SVD.o \
 	TableOfReal_extensions.o \
@@ -54,7 +56,7 @@ OBJECTS = ActivationList.o AffineTransform.o \
 	TextGrid_and_DurationTier.o TextGrid_and_PitchTier.o TextGrid_extensions.o \
 	TextGridTierNavigator.o TextGridNavigator.o TextGridView.o VowelEditor.o \
 	praat_MDS_init.o praat_BSS_init.o praat_HMM_init.o \
-	praat_KlattGrid_init.o praat_DataModeler_init.o praat_David_init.o
+	praat_KlattGrid_init.o praat_MultiSampledSpectrogram.o praat_DataModeler_init.o praat_David_init.o
 
 .PHONY: all clean
 

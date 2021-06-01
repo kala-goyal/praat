@@ -473,7 +473,7 @@ char *FileInMemoryManager_fgets (FileInMemoryManager me, char *str, int num, FIL
 	If some other reading error happens, the function also returns EOF, but sets its error indicator (ferror) instead.
 */
 int FileInMemoryManager_fgetc (FileInMemoryManager me, FILE *stream) {
-	char str[4];
+	char str [4];
 	(void) FileInMemoryManager_fgets (me, str, 1, stream);
 	return FileInMemoryManager_feof (me, stream) ? EOF : static_cast<int> (*str);
 }
@@ -602,7 +602,7 @@ int FileInMemoryManager_ungetc (FileInMemoryManager me, int character, FILE * st
 
 		A format specifier follows this prototype:
 
-		%[flags][width][.precision][length]specifier
+		%[flags][width][.precision][length] specifier
 
 		Where the specifier character at the end is the most significant component, since it defines the type and the interpretation of its corresponding argument:
 		specifier	Output	Example
